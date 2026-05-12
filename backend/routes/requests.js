@@ -8,7 +8,7 @@ const QRCode = require('qrcode');
 
 // @route   POST /api/requests
 // @desc    Create an OD Request (Student)
-router.post('/', auth, upload.fields([{ name: 'poster', maxCount: 1 }, { name: 'paymentProof', maxCount: 1 }]), async (req, res) => {
+router.post('/', auth, upload.fields([{ name: 'poster', maxCount: 1 }, { name: 'paymentProof', maxCount: 1 }, { name: 'document', maxCount: 1 }]), async (req, res) => {
   try {
     if (req.user.role !== 'Student') {
       return res.status(403).json({ message: 'Only students can apply for OD' });
@@ -18,16 +18,21 @@ router.post('/', auth, upload.fields([{ name: 'poster', maxCount: 1 }, { name: '
       return res.status(400).json({ message: 'Both Event Poster and Proof of Payment are required.' });
     }
 
-    const { department, reason, eventDetails, documents, startDate, endDate } = req.body;
+    const { department, reason, eventDetails, startDate, endDate } = req.body;
     const posterUrl = `/uploads/${req.files['poster'][0].filename}`;
     const paymentProofUrl = `/uploads/${req.files['paymentProof'][0].filename}`;
+    
+    let documentsUrl = req.body.documents || '';
+    if (req.files && req.files['document']) {
+      documentsUrl = `/uploads/${req.files['document'][0].filename}`;
+    }
     
     const newRequest = new ODRequest({
       studentId: req.user.userId,
       department,
       reason,
       eventDetails,
-      documents,
+      documents: documentsUrl,
       posterUrl,
       paymentProofUrl,
       startDate,
