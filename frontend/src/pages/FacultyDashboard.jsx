@@ -2,7 +2,31 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, XCircle, Clock, Calendar, FileText, ToggleLeft, ToggleRight, UserCheck } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Calendar, FileText, ToggleLeft, ToggleRight, UserCheck, Download } from 'lucide-react';
+
+const renderAttachment = (url, label) => {
+  if (!url) return null;
+  const isPdf = url.toLowerCase().endsWith('.pdf');
+  const isDoc = url.toLowerCase().match(/\.(doc|docx)$/);
+  const fullUrl = `http://localhost:5000${url}`;
+  
+  if (isPdf || isDoc) {
+    return (
+      <a href={fullUrl} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center p-4 h-full text-primary-500 hover:text-primary-600 transition-colors w-full">
+        <FileText size={32} className="mb-2 opacity-80" />
+        <span className="text-xs font-bold uppercase tracking-wider text-center flex items-center"><Download size={14} className="mr-1" /> {label}</span>
+      </a>
+    );
+  }
+  return (
+    <div className="relative group w-full h-full flex justify-center items-center">
+      <img src={fullUrl} alt={label} className="max-w-full max-h-48 object-contain rounded-xl" />
+      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
+        <a href={fullUrl} target="_blank" rel="noopener noreferrer" className="text-white text-xs font-bold px-3 py-1.5 bg-black/50 rounded-lg hover:bg-black/70 flex items-center"><Download size={14} className="mr-1" /> View Full</a>
+      </div>
+    </div>
+  );
+};
 
 export default function FacultyDashboard() {
   const { user } = useAuth();
@@ -139,14 +163,23 @@ export default function FacultyDashboard() {
 
                     <p className="text-text-muted text-sm mb-5 line-clamp-3 leading-relaxed transition-colors">{req.eventDetails}</p>
                     
-                    {req.posterUrl && req.paymentProofUrl && (
-                      <div className="mb-5 grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
-                        <div className="rounded-2xl overflow-hidden border border-border-soft bg-bg-panel flex justify-center py-2 transition-colors">
-                          <img src={`http://localhost:5000${req.posterUrl}`} alt="Event Poster" className="max-w-full max-h-48 object-contain rounded-xl" />
-                        </div>
-                        <div className="rounded-2xl overflow-hidden border border-border-soft bg-bg-panel flex justify-center py-2 transition-colors">
-                          <img src={`http://localhost:5000${req.paymentProofUrl}`} alt="Proof of Payment" className="max-w-full max-h-48 object-contain rounded-xl" />
-                        </div>
+                    {(req.posterUrl || req.paymentProofUrl || req.documents) && (
+                      <div className="mb-5 grid grid-cols-1 md:grid-cols-3 gap-4 relative z-10">
+                        {req.posterUrl && (
+                          <div className="rounded-2xl overflow-hidden border border-border-soft bg-bg-panel flex justify-center items-center py-2 transition-colors min-h-[120px]">
+                            {renderAttachment(req.posterUrl, "Event Poster")}
+                          </div>
+                        )}
+                        {req.paymentProofUrl && (
+                          <div className="rounded-2xl overflow-hidden border border-border-soft bg-bg-panel flex justify-center items-center py-2 transition-colors min-h-[120px]">
+                            {renderAttachment(req.paymentProofUrl, "Payment Proof")}
+                          </div>
+                        )}
+                        {req.documents && (
+                          <div className="rounded-2xl overflow-hidden border border-border-soft bg-bg-panel flex justify-center items-center py-2 transition-colors min-h-[120px]">
+                            {renderAttachment(req.documents, "Additional Doc")}
+                          </div>
+                        )}
                       </div>
                     )}
                     

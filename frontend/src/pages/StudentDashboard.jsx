@@ -2,7 +2,31 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, CheckCircle2, Clock, XCircle, Users, Calendar, FileText } from 'lucide-react';
+import { Plus, CheckCircle2, Clock, XCircle, Users, Calendar, FileText, Download } from 'lucide-react';
+
+const renderAttachment = (url, label) => {
+  if (!url) return null;
+  const isPdf = url.toLowerCase().endsWith('.pdf');
+  const isDoc = url.toLowerCase().match(/\.(doc|docx)$/);
+  const fullUrl = `http://localhost:5000${url}`;
+  
+  if (isPdf || isDoc) {
+    return (
+      <a href={fullUrl} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center justify-center p-4 h-full text-primary-500 hover:text-primary-600 transition-colors w-full">
+        <FileText size={32} className="mb-2 opacity-80" />
+        <span className="text-xs font-bold uppercase tracking-wider text-center flex items-center"><Download size={14} className="mr-1" /> {label}</span>
+      </a>
+    );
+  }
+  return (
+    <div className="relative group w-full h-full flex justify-center items-center">
+      <img src={fullUrl} alt={label} className="max-w-full max-h-48 object-contain rounded-xl" />
+      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
+        <a href={fullUrl} target="_blank" rel="noopener noreferrer" className="text-white text-xs font-bold px-3 py-1.5 bg-black/50 rounded-lg hover:bg-black/70 flex items-center"><Download size={14} className="mr-1" /> View Full</a>
+      </div>
+    </div>
+  );
+};
 
 export default function StudentDashboard() {
   const { user } = useAuth();
@@ -18,7 +42,8 @@ export default function StudentDashboard() {
     startDate: '',
     endDate: '',
     poster: null,
-    paymentProof: null
+    paymentProof: null,
+    document: null
   });
 
   useEffect(() => {
@@ -54,11 +79,14 @@ export default function StudentDashboard() {
       data.append('endDate', formData.endDate);
       data.append('poster', formData.poster);
       data.append('paymentProof', formData.paymentProof);
+      if (formData.document) {
+        data.append('document', formData.document);
+      }
 
       await api.post('/requests', data);
       
       setShowModal(false);
-      setFormData({ ...formData, reason: '', eventDetails: '', startDate: '', endDate: '', poster: null, paymentProof: null });
+      setFormData({ ...formData, reason: '', eventDetails: '', startDate: '', endDate: '', poster: null, paymentProof: null, document: null });
       fetchData();
     } catch (err) {
       console.error(err);
@@ -144,14 +172,23 @@ export default function StudentDashboard() {
                     </span>
                   </div>
                   
-                  {req.posterUrl && req.paymentProofUrl && (
-                    <div className="mb-5 grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
-                      <div className="rounded-2xl overflow-hidden border border-border-soft bg-bg-panel flex justify-center py-2 transition-colors">
-                        <img src={`http://localhost:5000${req.posterUrl}`} alt="Event Poster" className="max-w-full max-h-96 object-contain rounded-xl" />
-                      </div>
-                      <div className="rounded-2xl overflow-hidden border border-border-soft bg-bg-panel flex justify-center py-2 transition-colors">
-                        <img src={`http://localhost:5000${req.paymentProofUrl}`} alt="Proof of Payment" className="max-w-full max-h-96 object-contain rounded-xl" />
-                      </div>
+                  {(req.posterUrl || req.paymentProofUrl || req.documents) && (
+                    <div className="mb-5 grid grid-cols-1 md:grid-cols-3 gap-4 relative z-10">
+                      {req.posterUrl && (
+                        <div className="rounded-2xl overflow-hidden border border-border-soft bg-bg-panel flex justify-center items-center py-2 transition-colors min-h-[120px]">
+                          {renderAttachment(req.posterUrl, "Event Poster")}
+                        </div>
+                      )}
+                      {req.paymentProofUrl && (
+                        <div className="rounded-2xl overflow-hidden border border-border-soft bg-bg-panel flex justify-center items-center py-2 transition-colors min-h-[120px]">
+                          {renderAttachment(req.paymentProofUrl, "Payment Proof")}
+                        </div>
+                      )}
+                      {req.documents && (
+                        <div className="rounded-2xl overflow-hidden border border-border-soft bg-bg-panel flex justify-center items-center py-2 transition-colors min-h-[120px]">
+                          {renderAttachment(req.documents, "Additional Doc")}
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -310,6 +347,16 @@ export default function StudentDashboard() {
                       onChange={e => setFormData({...formData, paymentProof: e.target.files[0]})}
                     />
                   </div>
+                </div>
+                
+                <div className="mt-4">
+                  <label className="block text-xs font-bold text-text-muted uppercase tracking-wider mb-2 transition-colors">Additional Document (Optional)</label>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    className="w-full px-4 py-3 bg-bg-panel border border-border-soft rounded-xl focus:ring-2 focus:ring-primary-500 outline-none transition-all shadow-sm text-sm text-text-muted file:mr-4 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:uppercase file:tracking-wider file:bg-primary-50 file:dark:bg-primary-900/50 file:text-primary-600 file:dark:text-primary-400 hover:file:bg-primary-100 hover:file:dark:bg-primary-900/80 file:border file:border-primary-500/20 cursor-pointer"
+                    onChange={e => setFormData({...formData, document: e.target.files[0]})}
+                  />
                 </div>
 
                 <div className="pt-6 mt-4 border-t border-border-soft flex justify-end space-x-3 transition-colors">
